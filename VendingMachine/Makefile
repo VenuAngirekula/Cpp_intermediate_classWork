@@ -1,16 +1,3 @@
-# .PHONY:all
-# all:Run
-
-# Run: Testing
-# 	./Testing
-
-
-# Testing: Testing.o VendingMachine.o
-
-
-# clean:: 
-# 	$(RM) *[adios] *.ii VendingMachine Testing
-
 CXXFLAGS += -I.
 # CXXFLAGS += -std=c++2a
 # CXXFLAGS += -Wall -Wextra
@@ -35,3 +22,7 @@ test: $(CPP_FILES) $(COMPILED_HPP_FILES)
 
 %.compiled_hpp: %.hpp
 	@$(CXX) -x c++ $(CXXFLAGS) -c -o $@ $<
+
+.PHONY: clean
+clean::
+	$(RM) *[adios] *.ii VendingMachine
