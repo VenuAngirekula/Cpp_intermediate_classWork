@@ -31,9 +31,10 @@ class VendingMachine
                 {"Dime", 0.1},
                 {"Quater", 0.25}
                 };
-        std::array<int,3> _Entered_coins;
-        
+    
     public:
+        std::array<int,3> _Entered_coins;
+
         VendingMachine(int colaCount, int chipscount, int candycount);
 
         ~VendingMachine();
@@ -50,9 +51,9 @@ class VendingMachine
 
         void Print_Inventory();
 
-        void SelectItem();
+        std::string SelectItem();
 
-        void ProcessItem(std::string item);
+        float ProcessItem(std::string item);
 };
 
 

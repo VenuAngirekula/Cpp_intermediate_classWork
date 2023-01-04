@@ -4,21 +4,18 @@ using namespace std;
 
 
 /*********Construcor *********************/
-VendingMachine::VendingMachine(int colaCount, int chipscount, 
-                int candycount):_Cola_count(colaCount), 
-                _Chips_count(chipscount),
-                _Candy_count(candycount)
+VendingMachine::VendingMachine(int colaCount, int chipscount,int candycount)
+:_Cola_count(colaCount), 
+_Chips_count(chipscount),
+_Candy_count(candycount)
 {
-    Print_Inventory();
-    PrintHeader();
+   // PrintHeader();
 }
 
 void VendingMachine::PrintHeader()
 {
-    cout << "\nAvailable items: \n  \
-              COLA  :  $ 1.00 \n \
-              CHIPS :  $ 0.50 \n \
-              CANDY :  $ 0.65 " << endl;
+    cout << "\nAvailable items:\n " \
+         << "COLA : $ 1.00 |  CHIPS : $ 0.50 |   CANDY : $ 0.65 " << endl;
     
     cout << "\nAccetable Currency: NICKEL, DIME, QUATER " << endl;
     cout << "Ex: 2N 3D 4Q :: 2 NiCKELS + 3 DIMES + 4 QUATER\n\n" << endl;
@@ -27,9 +24,10 @@ void VendingMachine::PrintHeader()
 void VendingMachine::InsertCoins()
 {
     string coinInput;
-    cout << "INSERT COINS : ";
+    // cout << "INSERT COINS : ";
     cin >> coinInput;
     processCoins(coinInput);   
+    
 }
 
 void VendingMachine::processCoins(string coin_Input)
@@ -45,29 +43,38 @@ void VendingMachine::processCoins(string coin_Input)
     _currentAmount += _CoinValue["Nickel"] * _Entered_coins[0] + 
                       _CoinValue["Dime"]   * _Entered_coins[1] +
                       _CoinValue["Quater"] * _Entered_coins[2];
+
+    #if PRINT
+    cout << _Entered_coins[0] << " Nickels; "  \
+         << _Entered_coins[1] << " Dimes; "  \
+         << _Entered_coins[2] << " Quaters; " << endl;
     cout << "Entered value: " << _currentAmount << " $ " << endl;
+    #endif
 
 }
 
-void VendingMachine::SelectItem()
+std::string VendingMachine::SelectItem()
 {
-    cout << "Please select items: " ;
+    // cout << "Please select items: " ;
     string item;
     cin >> item;
     std::transform(item.begin(), item.end(), item.begin(), ::toupper);
-    
     if(_Rates.find(item) != _Rates.end()) {
-        ProcessItem(item);
+       // ProcessItem(item);
+        return item;
     }
     else
     {
-        cout << "Please select available items only" << endl;
+        // cout << "Please select available items only" << endl;
+        return "Invaid item";
     }    
 
 }
 
-void VendingMachine::ProcessItem(std::string item)
+float VendingMachine::ProcessItem(std::string item)
 {
+    float balanceAmount =  _currentAmount - _Rates[item];
+
     if(_Rates[item] > _currentAmount)
     {
         cout << "PRICE of selected item: " << _Rates[item] << \
@@ -76,16 +83,16 @@ void VendingMachine::ProcessItem(std::string item)
     }
     else if (_Rates[item] < _currentAmount)
     {
-        float balanceAmount =  _currentAmount - _Rates[item];
-        ReturnCoins(balanceAmount);
+        // ReturnCoins(balanceAmount);
     }
+    else
     {   
         cout << "Thank you!!!" << endl;
-        _currentAmount = 0.0;
+        _currentAmount = 0.0; 
         _Inventory[item]--;
-        Print_Inventory();
+        //Print_Inventory();
     }
-
+    return balanceAmount;
 }
 
 void VendingMachine::ReturnCoins(float balanceAmount)
