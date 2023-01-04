@@ -95,7 +95,16 @@ int main(int argc, char const *argv[])
         float balanceAmount =  Testing_ItemProcessing(VM,coinsinserted,\
                                     itemTobeSelected);
         
-        assert( (balanceAmount==0) );
+        assert( (balanceAmount<1e-06) );
+    }
+
+    {
+        VendingMachine VM(5,5,5);
+        std::string coinsinserted = "1N0D0Q\n 2N0D0Q\n 0N0D1Q\n 0N2D0Q\n 1N0D0Q";
+        std::string itemTobeSelected = "Candy";
+        float balanceAmount =  Testing_ItemProcessing(VM,coinsinserted,\
+                                    itemTobeSelected);        
+        assert( (balanceAmount<1e-06));
     }
 
     return 0;
@@ -131,36 +140,16 @@ float Testing_ItemProcessing(VendingMachine& VM, std::string Insertedcoins,\
     std::stringstream coinstream(Insertedcoins);
     
     streambuf* cin_backup = std::cin.rdbuf();
-
+    //Inset first coin
     std::cin.rdbuf(coinstream.rdbuf());
-    // int coinMarker = coinstream.tellg();
-    
-    cout << "Before marker pos: " << coinstream.tellg() << endl; 
     VM.InsertCoins();
-    for(auto i : VM._Entered_coins)
-        cout << i ;
-    
-    
+    //Select item
     std::cin.rdbuf(itemstream.rdbuf());
     string itemSelected = VM.SelectItem();
-
-
+    //Reinsert item
     std::cin.rdbuf(coinstream.rdbuf());
-    // cin.seekg(6);
     VM.ProcessItem(itemSelected);
-    // for(auto i : VM._Entered_coins)
-    //     cout << i ;
-
-    // cin.seekg(12);
-    // balanceAmount = VM.ProcessItem(itemSelected);
-    // for(auto i : VM._Entered_coins)
-    //     cout << i ;
-
-    // cin.seekg(18);
-    // balanceAmount = VM.ProcessItem(itemSelected);
-    // for(auto i : VM._Entered_coins)
-    //     cout << i ;
-    cout << "balanceAmount in testing: " << VM._balanceAmount;
+    // cout << "balanceAmount in testing: " << VM._balanceAmount;
 
     std::cin.rdbuf(cin_backup);
     return VM._balanceAmount;

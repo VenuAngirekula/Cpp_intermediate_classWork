@@ -74,24 +74,24 @@ std::string VendingMachine::SelectItem()
 void VendingMachine::ProcessItem(std::string item)
 {
     _balanceAmount =  _currentAmount - _Rates[item];
-
-    #if PRINT
-    cout <<  "_currentAmount = " <<_currentAmount  \
-         << " ; balanceAmount = "<< _balanceAmount << endl;
+    #if 1
+    cout <<  "_currentAmount = " << _currentAmount  \
+        << " ; balanceAmount = "<< -_balanceAmount << endl;
     #endif
     
     if(_Rates[item] > _currentAmount)
     {
+        #if 0
         cout << "PRICE of selected item: " << _Rates[item] << \
                 " | Amount Entered : " << _currentAmount << endl;
-        ReInsertCoins(item);
-        
+        #endif
+        ReInsertCoins(item); 
     }
     else if (_Rates[item] < _currentAmount)
     {
         // ReturnCoins(_balanceAmount);
     }
-    else
+    else if (fabs(_balanceAmount) < 1e-06)
     {   
         cout << "Thank you!!!" << endl;
         _currentAmount = 0.0; 
