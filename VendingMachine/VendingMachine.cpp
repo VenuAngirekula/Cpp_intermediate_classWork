@@ -71,19 +71,25 @@ std::string VendingMachine::SelectItem()
 
 }
 
-float VendingMachine::ProcessItem(std::string item)
+void VendingMachine::ProcessItem(std::string item)
 {
-    float balanceAmount =  _currentAmount - _Rates[item];
+    _balanceAmount =  _currentAmount - _Rates[item];
 
+    #if PRINT
+    cout <<  "_currentAmount = " <<_currentAmount  \
+         << " ; balanceAmount = "<< _balanceAmount << endl;
+    #endif
+    
     if(_Rates[item] > _currentAmount)
     {
         cout << "PRICE of selected item: " << _Rates[item] << \
                 " | Amount Entered : " << _currentAmount << endl;
-        InsertCoins();
+        ReInsertCoins(item);
+        
     }
     else if (_Rates[item] < _currentAmount)
     {
-        // ReturnCoins(balanceAmount);
+        // ReturnCoins(_balanceAmount);
     }
     else
     {   
@@ -92,22 +98,26 @@ float VendingMachine::ProcessItem(std::string item)
         _Inventory[item]--;
         //Print_Inventory();
     }
-    return balanceAmount;
 }
 
-void VendingMachine::ReturnCoins(float balanceAmount)
+void VendingMachine::ReInsertCoins(std::string item)
+{
+    InsertCoins();
+    ProcessItem(item);
+}
+
+void VendingMachine::ReturnCoins(float _balanceAmount)
 {
         
-    std::pair<int, float> getquaters= get_Coins(balanceAmount,"Quater");
-    int Quater_coins = getquaters.first; balanceAmount = getquaters.second;
+    std::pair<int, float> getquaters= get_Coins(_balanceAmount,"Quater");
+    int Quater_coins = getquaters.first; _balanceAmount = getquaters.second;
 
-    std::pair<int, float> getDimes= get_Coins(balanceAmount,"Dime");
-    int Dime_coins = getDimes.first; balanceAmount = getDimes.second;
+    std::pair<int, float> getDimes= get_Coins(_balanceAmount,"Dime");
+    int Dime_coins = getDimes.first; _balanceAmount = getDimes.second;
     
-    std::pair<int, float> getNickels= get_Coins(balanceAmount,"Nickel");
-    int Nickel_coins = getNickels.first; balanceAmount = getNickels.second;
+    std::pair<int, float> getNickels= get_Coins(_balanceAmount,"Nickel");
+    int Nickel_coins = getNickels.first; _balanceAmount = getNickels.second;
 
-    
     cout << "Please check return coin tray: " \
             << Nickel_coins << " Nickels;  "  \
             << Dime_coins   << " Dimes  ;  "  \

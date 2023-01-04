@@ -34,6 +34,7 @@ class VendingMachine
     
     public:
         std::array<int,3> _Entered_coins;
+        float _balanceAmount;
 
         VendingMachine(int colaCount, int chipscount, int candycount);
 
@@ -53,7 +54,9 @@ class VendingMachine
 
         std::string SelectItem();
 
-        float ProcessItem(std::string item);
+        void ProcessItem(std::string item);
+
+        void ReInsertCoins(std::string item);
 };
 
 
