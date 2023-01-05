@@ -13,9 +13,6 @@ class VendingMachine
     private:
         float _cashVault;
         float _currentAmount = 0.0;
-        int _Cola_count;
-        int _Chips_count;
-        int _Candy_count;
 
         int _Treasury_Nickels;
         int _Treasury_Dimes  ;
@@ -27,10 +24,10 @@ class VendingMachine
                 {"CHIPS", 0.5},
                 {"CANDY", 0.65}
                 };
-        std::unordered_map<std::string, float> _Inventory = {
-                {"COLA", _Cola_count},
-                {"CHIPS", _Chips_count},
-                {"CANDY", _Candy_count}
+        std::unordered_map<std::string, int> _Inventory = {
+                {"COLA", 0},
+                {"CHIPS", 0},
+                {"CANDY", 0}
                 };
         std::unordered_map<std::string, float> _CoinValue = {
                 {"Nickel", 0.05},
@@ -40,10 +37,15 @@ class VendingMachine
     
     public:
         std::array<int,3> _Entered_coins;
-        float _balanceAmount;
         std::array<int,3> _Return_coins;
+        std::string _selectedItem;
+        float _balanceAmount;
 
         VendingMachine(int colaCount, int chipscount, int candycount);
+
+        VendingMachine(std::array<int,3> Inventory);
+
+        VendingMachine(std::array<int,3> Inventory, std::array<int,3> Treasury);
 
         ~VendingMachine();
 
@@ -84,6 +86,9 @@ class VendingMachine
 
         void DischargeItem(std::string item);
         
+        void CheckInventory(std::string item);
+
+        void SoldOut();
 
 };
 

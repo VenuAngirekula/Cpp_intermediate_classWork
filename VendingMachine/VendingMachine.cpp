@@ -5,26 +5,39 @@ using namespace std;
 
 /*********Construcor *********************/
 VendingMachine::VendingMachine(int colaCount, int chipscount,int candycount)
-:_Cola_count(colaCount), 
-_Chips_count(chipscount),
-_Candy_count(candycount)
 {
+    SetInventory(std::array<int,3> {colaCount, chipscount, candycount});
    // PrintHeader();
 }
 
-void VendingMachine::SetInventory(std::array<int,3> Inventory)
+
+VendingMachine::VendingMachine(std::array<int,3> Initial_Inventory)
 {
-    _Cola_count  = Inventory[0] ; 
-    _Chips_count = Inventory[1] ;
-    _Candy_count = Inventory[2] ;  
+    SetInventory(Initial_Inventory);
+   // PrintHeader();
 }
 
-void VendingMachine::SetTreasurycoins(std::array<int,3> InitialCoins)
+VendingMachine::VendingMachine(std::array<int,3> Initial_Inventory,
+                               std::array<int,3> Initial_Treasury)
 {
-    _Treasury_Nickels = InitialCoins[0];
-    _Treasury_Dimes   = InitialCoins[1];
-    _Treasury_Quaters = InitialCoins[2];
-    _Treasury_Coins = InitialCoins;
+    SetInventory(Initial_Inventory);
+    SetTreasurycoins(Initial_Treasury);
+   // PrintHeader();
+}
+
+void VendingMachine::SetInventory(std::array<int,3> Initial_Inventory)
+{
+    _Inventory["COLA"]  = Initial_Inventory[0]; 
+    _Inventory["CHIPS"]  = Initial_Inventory[1]; 
+    _Inventory["CANDY"]  = Initial_Inventory[2];     
+}
+
+void VendingMachine::SetTreasurycoins(std::array<int,3> Initial_Treasury)
+{
+    _Treasury_Nickels = Initial_Treasury[0];
+    _Treasury_Dimes   = Initial_Treasury[1];
+    _Treasury_Quaters = Initial_Treasury[2];
+    _Treasury_Coins = Initial_Treasury;
 }
 
 void VendingMachine::PrintHeader()
@@ -80,6 +93,8 @@ void VendingMachine::ProcessCoins(string coinInput)
 
 }
 
+
+
 std::string VendingMachine::SelectItem()
 {
     #if PROD
@@ -89,19 +104,35 @@ std::string VendingMachine::SelectItem()
     string item;
     cin >> item;
     std::transform(item.begin(), item.end(), item.begin(), ::toupper);
-    if(_Rates.find(item) != _Rates.end()) {
+    if(_Rates.find(item) != _Rates.end())
+    {
+        _selectedItem = item;
+        CheckInventory(item);
         #if PROD
-            ProcessItem(item);
+            Dispatch_Reinsert_Makechange(item);
         #endif
-        return item;
     }
     else
     {
         #if PROD
             cout << "Please select available items only" << endl;
         #endif
-        return "Invaid item";
-    }    
+        _selectedItem = "";
+    }   
+    return _selectedItem;
+}
+
+void VendingMachine::CheckInventory(std::string item)
+{
+    if (_Inventory[item]==0 && !item.empty())
+    {
+        _selectedItem = "";
+        cout << "\t!!! "<< item << " - SOLD OUT" << endl;
+        SelectItem();
+    }
+}
+void VendingMachine::SoldOut()
+{
 
 }
 
@@ -131,14 +162,16 @@ void VendingMachine::Dispatch_Reinsert_Makechange(std::string item)
 void VendingMachine::DischargeItem(std::string item)
 {
     cout << item << " Dispatched. " << "Thank you!!!"  << endl;
-        _currentAmount = 0.0; 
-        _Inventory[item]--;  
+    _currentAmount = 0.0; 
+    _Inventory[item]--;  
 }
+
 bool VendingMachine::ReturnCoins()
 {
     if(checkReturnCoins())
     {
-        Makechange(_currentAmount,"Nontreasury");
+        _balanceAmount = _currentAmount;
+        Makechange(_balanceAmount,"Nontreasury");
         return  true;
 
         #if PROD
@@ -157,7 +190,6 @@ void VendingMachine::ReInsertCoins(std::string item)
         Dispatch_Reinsert_Makechange(item);
         return;
     }
-    
 }
 
 bool VendingMachine::checkReturnCoins()
@@ -194,14 +226,16 @@ void VendingMachine::Makechange(float amount ,std::string whichcoins)
         
         std::pair<int, float> getNickels= get_Coins(amount,"Nickel");
         Return_Nickels = getNickels.first; amount = getNickels.second;
+
+        _Return_coins = {Return_Nickels, Return_Dimes, Return_Quaters };
     }
     cout << "Please check return coin tray: " \
             << Return_Nickels << " Nickels;  "  \
             << Return_Dimes   << " Dimes  ;  "  \
             << Return_Quaters << " Quater ;  "  << endl;
 
-    cout << "_balanceAmount : " <<_balanceAmount << endl;
-    cout << "_currentAmount : " <<_currentAmount << endl;
+    cout << "\tAmount inserted : " << _currentAmount << " $" <<
+            "\tAmount returned : " << _balanceAmount << " $" << endl;
 }
 
 std::pair <int, float> VendingMachine::get_Coins(float balanceAmount, string coinName)

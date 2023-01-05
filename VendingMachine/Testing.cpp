@@ -8,10 +8,13 @@ using namespace std;
 void Testing_Acceptcoins(VendingMachine& VM, 
                             std::string coins);
 
-std::string Testing_ItemSelection(VendingMachine& VM, std::string Insertedcoins,\
+void Testing_ItemSelection(VendingMachine& VM, std::string Insertedcoins,\
                         std::string selecteditem);
 
 float Testing_Dispatch_Reinsert_Makechange(VendingMachine& VM, std::string Insertedcoins,\
+                               std::string selecteditem);
+
+float Testing_Repeat_itemSelection(VendingMachine& VM, std::string Insertedcoins,\
                                std::string selecteditem);
 
 int main(int argc, char const *argv[])
@@ -45,11 +48,10 @@ int main(int argc, char const *argv[])
     std::vector<std::string> testItemNames = {"Cola", "Chips", "Candy"};
     for (auto testItem: testItemNames)
     {
-        
         VendingMachine VM(5,5,5);
-        std::string itemSelected = Testing_ItemSelection(VM,"20N4D10Q",testItem);
+        Testing_ItemSelection(VM,"20N4D10Q",testItem);
         std::transform(testItem.begin(),testItem.end(), testItem.begin(), ::toupper);
-        assert(itemSelected==testItem);
+        assert(VM._selectedItem==testItem);
         cout << "Test passed for :"  << testItem << endl;
     }
 
@@ -120,37 +122,43 @@ int main(int argc, char const *argv[])
     // Case:  collected amount > Item price
     {
         cout << "\nTest case 11" << endl;
+        std::array<int,3> expectedRetCoins = {0,1,1};
+
         VendingMachine VM(5,5,5);
         std::string coinsinserted = "0N0D4Q\n";
         std::string itemTobeSelected = "Candy";
-        float balanceAmount =  Testing_Dispatch_Reinsert_Makechange(VM,coinsinserted,\
+        Testing_Dispatch_Reinsert_Makechange(VM,coinsinserted,\
                                     itemTobeSelected);        
-        assert( (balanceAmount-0.35) < 1e-06);
+        assert( expectedRetCoins == VM._Return_coins);
     }
 
     {
         cout << "\nTest case 12" << endl;
+        std::array<int,3> expectedRetCoins = {0,1,0};
+
         VendingMachine VM(5,5,5);
         std::string coinsinserted = "7N0D1Q\n";
         std::string itemTobeSelected = "Chips";
         float balanceAmount =  Testing_Dispatch_Reinsert_Makechange(VM,coinsinserted,\
                                     itemTobeSelected);        
-        assert( (balanceAmount-0.1) < 1e-06);
+        assert( expectedRetCoins == VM._Return_coins);
     }   
 
     {
         cout << "\nTest case 13" << endl;
+        std::array<int,3> expectedRetCoins = {0,2,1};
+
         VendingMachine VM(5,5,5);
         std::string coinsinserted = "7N1D4Q\n";
         std::string itemTobeSelected = "Cola";
         float balanceAmount =  Testing_Dispatch_Reinsert_Makechange(VM,coinsinserted,\
                                     itemTobeSelected);        
-        assert( (balanceAmount-0.45) < 1e-06);
+        assert( expectedRetCoins == VM._Return_coins);
     }
     // Case: Customer presses Return coins
     {
         cout << "\nTest case 14" << endl;
-        std::array<int,3> testcoins = {0,5,2};
+        std::array<int,3> expectedRetCoins = {0,5,2};
         
         VendingMachine VM(5,5,5);
         std::string coinsinserted = "0N5D2Q\nN";
@@ -158,7 +166,45 @@ int main(int argc, char const *argv[])
         Testing_Dispatch_Reinsert_Makechange(VM,coinsinserted,\
                                     itemTobeSelected);        
 
-        assert( VM._Return_coins == testcoins);
+        assert( expectedRetCoins == VM._Return_coins);
+    }
+    /***********Sold out testing******************/
+    // Case: If item is out of stock
+    {
+        cout << "\nTest case 15" << endl;
+        std::array<int,3>  Inventory = {0,1,1};
+        VendingMachine VM(Inventory);
+        std::string coinsinserted = "0N5D2Q";
+        std::string itemTobeSelected = "Cola";
+        Testing_Repeat_itemSelection(VM,coinsinserted,\
+                                    itemTobeSelected);        
+        assert( VM._selectedItem.empty());
+    }
+
+    // Case: item is out of stock + New item entered
+    {
+        cout << "\nTest case 16" << endl;
+        std::array<int,3>  Inventory = {0,1,1};
+        VendingMachine VM(Inventory);
+        std::string coinsinserted = "0N5D2Q";
+        std::string itemTobeSelected = "Cola\nChips";
+        Testing_Repeat_itemSelection(VM,coinsinserted,\
+                                    itemTobeSelected);        
+
+        assert( VM._selectedItem == "CHIPS");
+    }
+
+    // Case: item is out of stock + New item entered
+    {
+        cout << "\nTest case 17" << endl;
+        std::array<int,3>  Inventory = {0,0,1};
+        VendingMachine VM(Inventory);
+        std::string coinsinserted = "0N4D0Q\n1N2D0Q";
+        std::string itemTobeSelected = "Cola\nChips\nCandy";
+        Testing_Repeat_itemSelection(VM,coinsinserted,\
+                                    itemTobeSelected);        
+
+        assert( VM._selectedItem == "CANDY");
     }
 
     return 0;
@@ -174,7 +220,7 @@ void Testing_Acceptcoins(VendingMachine& VM,
     std::cin.rdbuf(cin_backup);
 }
 
-std::string Testing_ItemSelection(VendingMachine& VM, std::string Insertedcoins,\
+void Testing_ItemSelection(VendingMachine& VM, std::string Insertedcoins,\
                         std::string selecteditem)
 {
     Testing_Acceptcoins(VM,Insertedcoins);
@@ -183,7 +229,7 @@ std::string Testing_ItemSelection(VendingMachine& VM, std::string Insertedcoins,
     std::cin.rdbuf(Itemstream.rdbuf());
     string itemSelected = VM.SelectItem();
     std::cin.rdbuf(cin_backup);
-    return itemSelected;
+
 }
 
 float Testing_Dispatch_Reinsert_Makechange(VendingMachine& VM, std::string Insertedcoins,\
@@ -200,13 +246,33 @@ float Testing_Dispatch_Reinsert_Makechange(VendingMachine& VM, std::string Inser
     //Select item
     std::cin.rdbuf(itemstream.rdbuf());
     string itemSelected = VM.SelectItem();
-    //Reinsert item
+    //Reinsert coin
     std::cin.rdbuf(coinstream.rdbuf());
     VM.Dispatch_Reinsert_Makechange(itemSelected);
-    // cout << "balanceAmount in testing: " << VM._balanceAmount;
-
-    std::cin.rdbuf(cin_backup);
+    
+    std::cin.rdbuf(cin_backup);    
     return VM._balanceAmount;
+
+}
+
+float Testing_Repeat_itemSelection(VendingMachine& VM, std::string Insertedcoins,\
+                               std::string selecteditem)
+{
+    std::stringstream itemstream(selecteditem);
+    std::stringstream coinstream(Insertedcoins);
     
+    streambuf* cin_backup = std::cin.rdbuf();
+    //Inset first coin
+    std::cin.rdbuf(coinstream.rdbuf());
+    VM.InsertCoins();
+    //Select item
+    std::cin.rdbuf(itemstream.rdbuf());
+    string itemSelected = VM.SelectItem();
+    //Reinsert coin
+    std::cin.rdbuf(coinstream.rdbuf());
+    VM.Dispatch_Reinsert_Makechange(itemSelected);
     
+    std::cin.rdbuf(cin_backup);    
+    return VM._balanceAmount;
+
 }
