@@ -6,6 +6,7 @@
 #include <regex>
 #include <algorithm>
 #include <cmath>
+#include <unordered_map>
 
 class VendingMachine
 {
@@ -15,18 +16,23 @@ class VendingMachine
         int _Cola_count;
         int _Chips_count;
         int _Candy_count;
+
+        int _Treasury_Nickels;
+        int _Treasury_Dimes  ;
+        int _Treasury_Quaters;
+        std::array<int,3> _Treasury_Coins;
         
-        std::map<std::string, float> _Rates = {
+        std::unordered_map<std::string, float> _Rates = {
                 {"COLA", 1},
                 {"CHIPS", 0.5},
                 {"CANDY", 0.65}
                 };
-        std::map<std::string, float> _Inventory = {
+        std::unordered_map<std::string, float> _Inventory = {
                 {"COLA", _Cola_count},
                 {"CHIPS", _Chips_count},
                 {"CANDY", _Candy_count}
                 };
-        std::map<std::string, float> _CoinValue = {
+        std::unordered_map<std::string, float> _CoinValue = {
                 {"Nickel", 0.05},
                 {"Dime", 0.1},
                 {"Quater", 0.25}
@@ -35,16 +41,30 @@ class VendingMachine
     public:
         std::array<int,3> _Entered_coins;
         float _balanceAmount;
+        std::array<int,3> _Return_coins;
 
         VendingMachine(int colaCount, int chipscount, int candycount);
 
         ~VendingMachine();
 
-        void InsertCoins();
+        float coinToCurrency(std::array<int,3> coins);
 
-        void processCoins(std::string s);
+        void SetInventory(std::array<int,3> Inventory);
 
-        void ReturnCoins(float balanceAmount);
+        void SetTreasurycoins(std::array<int,3> InitialCoins);
+
+        float GetTreasuryAmount()
+        {
+             return  _Treasury_Nickels * _CoinValue["Nickel"] + \
+                     _Treasury_Dimes   * _CoinValue["Dime"] + \
+                     _Treasury_Quaters * _CoinValue["Quater"] ;
+        }
+
+        bool InsertCoins();
+
+        void ProcessCoins(std::string s);
+
+        void Makechange(float _balanceAmount,std::string whichcoins);
 
         std::pair <int, float> get_Coins(float balanceAmount,std::string coinName);
 
@@ -54,9 +74,17 @@ class VendingMachine
 
         std::string SelectItem();
 
-        void ProcessItem(std::string item);
+        void Dispatch_Reinsert_Makechange(std::string item);
 
         void ReInsertCoins(std::string item);
+
+        bool ReturnCoins();
+
+        bool checkReturnCoins();
+
+        void DischargeItem(std::string item);
+        
+
 };
 
 

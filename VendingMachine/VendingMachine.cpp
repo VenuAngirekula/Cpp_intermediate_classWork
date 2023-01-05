@@ -12,6 +12,21 @@ _Candy_count(candycount)
    // PrintHeader();
 }
 
+void VendingMachine::SetInventory(std::array<int,3> Inventory)
+{
+    _Cola_count  = Inventory[0] ; 
+    _Chips_count = Inventory[1] ;
+    _Candy_count = Inventory[2] ;  
+}
+
+void VendingMachine::SetTreasurycoins(std::array<int,3> InitialCoins)
+{
+    _Treasury_Nickels = InitialCoins[0];
+    _Treasury_Dimes   = InitialCoins[1];
+    _Treasury_Quaters = InitialCoins[2];
+    _Treasury_Coins = InitialCoins;
+}
+
 void VendingMachine::PrintHeader()
 {
     cout << "\nAvailable items:\n " \
@@ -21,30 +36,42 @@ void VendingMachine::PrintHeader()
     cout << "Ex: 2N 3D 4Q :: 2 NiCKELS + 3 DIMES + 4 QUATER\n\n" << endl;
 }
 
-void VendingMachine::InsertCoins()
+float VendingMachine::coinToCurrency(std::array<int,3> coins)
 {
-    string coinInput;
-    // cout << "INSERT COINS : ";
-    cin >> coinInput;
-    processCoins(coinInput);   
-    
+    return (_CoinValue["Nickel"] * coins[0] +
+            _CoinValue["Dime"]   * coins[1] +
+            _CoinValue["Quater"] * coins[2]);
 }
 
-void VendingMachine::processCoins(string coin_Input)
+bool VendingMachine::InsertCoins()
+{
+    string coinInput;
+    #if PROD
+    // cout << "INSERT COINS : ";
+    #endif
+    cin >> coinInput;
+    if(coinInput.empty())
+    {
+        cerr << "No coins inserted" << endl;
+        return false;
+    }
+    ProcessCoins(coinInput);   
+    return true;    
+}
+
+void VendingMachine::ProcessCoins(string coinInput)
 {
     int ind = 0;
     regex pat("\\d+");
 	smatch result;
-    while (std::regex_search(coin_Input, result, pat)) {
+    while (std::regex_search(coinInput, result, pat)) {
         _Entered_coins[ind] = stoi(result.str());
-        coin_Input = result.suffix().str();
+        coinInput = result.suffix().str();
         ind++;
     }
-    _currentAmount += _CoinValue["Nickel"] * _Entered_coins[0] + 
-                      _CoinValue["Dime"]   * _Entered_coins[1] +
-                      _CoinValue["Quater"] * _Entered_coins[2];
+    _currentAmount += coinToCurrency(_Entered_coins);
 
-    #if PRINT
+    #if DEBUG
     cout << _Entered_coins[0] << " Nickels; "  \
          << _Entered_coins[1] << " Dimes; "  \
          << _Entered_coins[2] << " Quaters; " << endl;
@@ -55,73 +82,126 @@ void VendingMachine::processCoins(string coin_Input)
 
 std::string VendingMachine::SelectItem()
 {
-    // cout << "Please select items: " ;
+    #if PROD
+    cout << "Please select items: " ;
+    #endif
+
     string item;
     cin >> item;
     std::transform(item.begin(), item.end(), item.begin(), ::toupper);
     if(_Rates.find(item) != _Rates.end()) {
-       // ProcessItem(item);
+        #if PROD
+            ProcessItem(item);
+        #endif
         return item;
     }
     else
     {
-        // cout << "Please select available items only" << endl;
+        #if PROD
+            cout << "Please select available items only" << endl;
+        #endif
         return "Invaid item";
     }    
 
 }
 
-void VendingMachine::ProcessItem(std::string item)
+void VendingMachine::Dispatch_Reinsert_Makechange(std::string item)
 {
     _balanceAmount =  _currentAmount - _Rates[item];
-    #if 1
-    cout <<  "_currentAmount = " << _currentAmount  \
-        << " ; balanceAmount = "<< -_balanceAmount << endl;
-    #endif
     
     if(_Rates[item] > _currentAmount)
     {
-        #if 0
-        cout << "PRICE of selected item: " << _Rates[item] << \
-                " | Amount Entered : " << _currentAmount << endl;
-        #endif
         ReInsertCoins(item); 
     }
-    else if (_Rates[item] < _currentAmount)
+    else if (std::fabs(_balanceAmount) < 1e-06)
+    {  
+        if(ReturnCoins())
+            return;
+        DischargeItem(item);
+              
+    }
+    else if (_Rates[item] < _currentAmount )
     {
-        // ReturnCoins(_balanceAmount);
+        Makechange(_balanceAmount,"Treasury");
+        DischargeItem(item);
     }
-    else if (fabs(_balanceAmount) < 1e-06)
-    {   
-        cout << "Thank you!!!" << endl;
+    
+}
+
+void VendingMachine::DischargeItem(std::string item)
+{
+    cout << item << " Dispatched. " << "Thank you!!!"  << endl;
         _currentAmount = 0.0; 
-        _Inventory[item]--;
-        //Print_Inventory();
+        _Inventory[item]--;  
+}
+bool VendingMachine::ReturnCoins()
+{
+    if(checkReturnCoins())
+    {
+        Makechange(_currentAmount,"Nontreasury");
+        return  true;
+
+        #if PROD
+            InsertCoins();
+        #endif    
     }
+    return false;
+
 }
 
 void VendingMachine::ReInsertCoins(std::string item)
 {
-    InsertCoins();
-    ProcessItem(item);
+    _Entered_coins = {0,0,0};
+    if (InsertCoins())
+    {
+        Dispatch_Reinsert_Makechange(item);
+        return;
+    }
+    
 }
 
-void VendingMachine::ReturnCoins(float _balanceAmount)
+bool VendingMachine::checkReturnCoins()
 {
+    cout << "Select Proceed (Y) or Return coins(N)" << endl;
+    string RetcoinUserInput;
+    cin >> RetcoinUserInput;
+    std::transform(RetcoinUserInput.begin(), RetcoinUserInput.end(),
+            RetcoinUserInput.begin(), ::toupper);
+    if(RetcoinUserInput=="N")
+        return true;
+
+    return false;
+}
+
+void VendingMachine::Makechange(float amount ,std::string whichcoins)
+{
+    int Return_Nickels, Return_Dimes, Return_Quaters;
+
+    if(whichcoins == "Nontreasury")
+    {
+        _Return_coins  = _Entered_coins;
+        Return_Nickels = _Return_coins[0];
+        Return_Dimes   = _Return_coins[1];
+        Return_Quaters = _Return_coins[2];   
+    }
+    else
+    {    
+        std::pair<int, float> getquaters= get_Coins(amount,"Quater");
+        Return_Quaters = getquaters.first; amount = getquaters.second;
+
+        std::pair<int, float> getDimes= get_Coins(amount,"Dime");
+        Return_Dimes = getDimes.first; amount = getDimes.second;
         
-    std::pair<int, float> getquaters= get_Coins(_balanceAmount,"Quater");
-    int Quater_coins = getquaters.first; _balanceAmount = getquaters.second;
-
-    std::pair<int, float> getDimes= get_Coins(_balanceAmount,"Dime");
-    int Dime_coins = getDimes.first; _balanceAmount = getDimes.second;
-    
-    std::pair<int, float> getNickels= get_Coins(_balanceAmount,"Nickel");
-    int Nickel_coins = getNickels.first; _balanceAmount = getNickels.second;
-
+        std::pair<int, float> getNickels= get_Coins(amount,"Nickel");
+        Return_Nickels = getNickels.first; amount = getNickels.second;
+    }
     cout << "Please check return coin tray: " \
-            << Nickel_coins << " Nickels;  "  \
-            << Dime_coins   << " Dimes  ;  "  \
-            << Quater_coins << " Quater ;  "  << endl;
+            << Return_Nickels << " Nickels;  "  \
+            << Return_Dimes   << " Dimes  ;  "  \
+            << Return_Quaters << " Quater ;  "  << endl;
+
+    cout << "_balanceAmount : " <<_balanceAmount << endl;
+    cout << "_currentAmount : " <<_currentAmount << endl;
 }
 
 std::pair <int, float> VendingMachine::get_Coins(float balanceAmount, string coinName)
